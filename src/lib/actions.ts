@@ -1,5 +1,5 @@
 'use server';
-import { sql } from './db';
+import { sql, Servicio } from './db';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -42,7 +42,7 @@ export async function logout() {
   redirect('/login');
 }
 
-export async function getServicios(mes?: string) {
+export async function getServicios(mes?: string): Promise<Servicio[]> {
   if (!(await isAuthenticated())) {
     return [];
   }
@@ -52,14 +52,14 @@ export async function getServicios(mes?: string) {
     if (mes) {
       // mes format: YYYY-MM
       const [year, month] = mes.split('-');
-      query = sql`
+      query = sql<Servicio>`
         SELECT * FROM servicios 
         WHERE EXTRACT(YEAR FROM fecha) = ${year} 
         AND EXTRACT(MONTH FROM fecha) = ${month}
         ORDER BY fecha DESC, id DESC
       `;
     } else {
-      query = sql`SELECT * FROM servicios ORDER BY fecha DESC, id DESC LIMIT 50`;
+      query = sql<Servicio>`SELECT * FROM servicios ORDER BY fecha DESC, id DESC LIMIT 50`;
     }
     const { rows } = await query;
     return rows;
