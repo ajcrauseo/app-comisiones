@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Servicio } from '@/lib/db';
 import { deleteServicio } from '@/lib/actions';
-import { Trash2, AlertCircle, X } from 'lucide-react';
+import { Trash2, AlertCircle, X, Receipt, Wallet, Hash } from 'lucide-react';
 
 export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
   const totalFacturado = servicios.reduce((acc, s) => acc + Number(s.monto), 0);
@@ -29,6 +29,13 @@ export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
   );
 }
 
+interface GrupoDia {
+  fecha: string;
+  servicios: Servicio[];
+  totalMonto: number;
+  totalComision: number;
+}
+
 export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -49,40 +56,82 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     );
   }
 
+  // Agrupar servicios por fecha
+  const grupos = servicios.reduce((acc: GrupoDia[], s) => {
+    // Normalizar fecha para agrupar (YYYY-MM-DD)
+    const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+    const dateStr = dateObj.toISOString().split('T')[0];
+
+    const grupoExistente = acc.find(g => g.fecha === dateStr);
+    if (grupoExistente) {
+      grupoExistente.servicios.push(s);
+      grupoExistente.totalMonto += Number(s.monto);
+      grupoExistente.totalComision += Number(s.comision);
+    } else {
+      acc.push({
+        fecha: dateStr,
+        servicios: [s],
+        totalMonto: Number(s.monto),
+        totalComision: Number(s.comision)
+      });
+    }
+    return acc;
+  }, []);
+
+  // Ordenar grupos por fecha (descendente)
+  grupos.sort((a, b) => b.fecha.localeCompare(a.fecha));
+
   return (
     <>
       {/* Mobile Cards View */}
       <div className="mobile-cards">
-        {servicios.map((s) => {
-          const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
-          const fechaFormateada = dateObj.toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit'
-          });
+        {grupos.map((grupo) => {
+          const dateObj = new Date(grupo.fecha + 'T12:00:00');
+          const dayName = dateObj.toLocaleDateString('es-AR', { weekday: 'long' });
+          const dayNumber = dateObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
 
           return (
-            <div key={`mobile-${s.id}`} className="mobile-item-card">
-              <div className="mobile-item-header">
-                <div>
-                  <span className="mobile-item-date">{fechaFormateada}</span>
-                  <div className="mobile-item-name">{s.cliente}</div>
+            <div key={`group-mobile-${grupo.fecha}`} className="day-group">
+              <div className="day-header">
+                <div className="day-title">
+                  {dayName}, {dayNumber}
                 </div>
-                <button 
-                  onClick={() => setDeletingId(s.id)}
-                  className="secondary icon-only"
-                  style={{ minHeight: '40px', minWidth: '40px', color: 'var(--danger)' }}
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-              <div className="mobile-item-details">
-                <div className="mobile-item-amount">
-                  Total: ${Number(s.monto).toLocaleString('es-AR')}
-                </div>
-                <div className="mobile-item-commission">
-                  ${Number(s.comision).toLocaleString('es-AR')}
+                <div className="day-totals">
+                  <div className="day-total-item">
+                    <span className="day-total-label">Fact.</span>
+                    <span className="day-total-value">${grupo.totalMonto.toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="day-total-item">
+                    <span className="day-total-label text-success">Com.</span>
+                    <span className="day-total-value text-success">${grupo.totalComision.toLocaleString('es-AR')}</span>
+                  </div>
                 </div>
               </div>
+
+              {grupo.servicios.map((s) => (
+                <div key={`mobile-${s.id}`} className="mobile-item-card" style={{ marginBottom: '0.5rem' }}>
+                  <div className="mobile-item-header">
+                    <div>
+                      <div className="mobile-item-name">{s.cliente}</div>
+                    </div>
+                    <button 
+                      onClick={() => setDeletingId(s.id)}
+                      className="secondary icon-only"
+                      style={{ minHeight: '36px', minWidth: '36px', color: 'var(--danger)' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <div className="mobile-item-details">
+                    <div className="mobile-item-amount">
+                      Total: ${Number(s.monto).toLocaleString('es-AR')}
+                    </div>
+                    <div className="mobile-item-commission">
+                      ${Number(s.comision).toLocaleString('es-AR')}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           );
         })}
@@ -93,7 +142,6 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
               <th>Cliente</th>
               <th className="text-right">Monto</th>
               <th className="text-right">Comisión</th>
@@ -101,33 +149,58 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
             </tr>
           </thead>
           <tbody>
-            {servicios.map((s) => {
-              const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+            {grupos.map((grupo) => {
+              const dateObj = new Date(grupo.fecha + 'T12:00:00');
               const fechaFormateada = dateObj.toLocaleDateString('es-AR', {
+                weekday: 'long',
                 day: '2-digit',
-                month: '2-digit',
+                month: 'long',
                 year: 'numeric'
               });
 
               return (
-                <tr key={`desktop-${s.id}`}>
-                  <td>{fechaFormateada}</td>
-                  <td>{s.cliente}</td>
-                  <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
-                  <td className="text-right font-bold text-primary">
-                    ${Number(s.comision).toLocaleString('es-AR')}
-                  </td>
-                  <td className="text-right">
-                    <button 
-                      onClick={() => setDeletingId(s.id)}
-                      className="secondary icon-only"
-                      style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={`group-desktop-${grupo.fecha}`}>
+                  <tr className="table-group-header">
+                    <td colSpan={2}>
+                      <span style={{ textTransform: 'capitalize' }}>{fechaFormateada}</span>
+                    </td>
+                    <td colSpan={2} className="text-right">
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1.5rem', fontSize: '0.85rem' }}>
+                        <span>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Total Dia:</span>
+                          <strong>${grupo.totalMonto.toLocaleString('es-AR')}</strong>
+                        </span>
+                        <span>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Comisión:</span>
+                          <strong className="text-success">${grupo.totalComision.toLocaleString('es-AR')}</strong>
+                        </span>
+                        <span>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Cant:</span>
+                          <strong>{grupo.servicios.length}</strong>
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  {grupo.servicios.map((s) => (
+                    <tr key={`desktop-${s.id}`}>
+                      <td>{s.cliente}</td>
+                      <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
+                      <td className="text-right font-bold text-primary">
+                        ${Number(s.comision).toLocaleString('es-AR')}
+                      </td>
+                      <td className="text-right">
+                        <button 
+                          onClick={() => setDeletingId(s.id)}
+                          className="secondary icon-only"
+                          style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
+                          title="Eliminar"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -223,3 +296,5 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     </>
   );
 }
+
+import React from 'react';
