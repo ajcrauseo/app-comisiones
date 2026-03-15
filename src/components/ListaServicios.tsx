@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Servicio } from '@/lib/db';
-import { deleteServicio } from '@/lib/actions';
-import { Trash2, AlertCircle, X, Receipt, Wallet, Hash } from 'lucide-react';
+import { deleteServicio, toggleResaltado, updateServicio } from '@/lib/actions';
+import { Trash2, AlertCircle, X, Star, Edit, Save } from 'lucide-react';
 
 export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
   const totalFacturado = servicios.reduce((acc, s) => acc + Number(s.monto), 0);
@@ -38,7 +38,9 @@ interface GrupoDia {
 
 export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editingServicio, setEditingServicio] = useState<Servicio | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [isPendingEdit, setIsPendingEdit] = useState(false);
 
   const confirmDelete = async () => {
     if (!deletingId) return;
@@ -46,6 +48,21 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     await deleteServicio(deletingId);
     setIsPending(false);
     setDeletingId(null);
+  };
+
+  const handleToggleStar = async (id: number, current: boolean) => {
+    await toggleResaltado(id, current);
+  };
+
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingServicio) return;
+    
+    setIsPendingEdit(true);
+    const formData = new FormData(e.currentTarget);
+    await updateServicio(editingServicio.id, formData);
+    setIsPendingEdit(false);
+    setEditingServicio(null);
   };
 
   if (servicios.length === 0) {
@@ -58,7 +75,6 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
 
   // Agrupar servicios por fecha
   const grupos = servicios.reduce((acc: GrupoDia[], s) => {
-    // Normalizar fecha para agrupar (YYYY-MM-DD)
     const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
     const dateStr = dateObj.toISOString().split('T')[0];
 
@@ -78,7 +94,6 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     return acc;
   }, []);
 
-  // Ordenar grupos por fecha (descendente)
   grupos.sort((a, b) => b.fecha.localeCompare(a.fecha));
 
   return (
@@ -109,18 +124,42 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
               </div>
 
               {grupo.servicios.map((s) => (
-                <div key={`mobile-${s.id}`} className="mobile-item-card" style={{ marginBottom: '0.5rem' }}>
+                <div 
+                  key={`mobile-${s.id}`} 
+                  className="mobile-item-card" 
+                  style={{ 
+                    marginBottom: '0.5rem',
+                    borderLeft: s.resaltado ? '4px solid #f59e0b' : '1px solid var(--border)',
+                    backgroundColor: s.resaltado ? '#fffbeb' : 'white'
+                  }}
+                >
                   <div className="mobile-item-header">
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <div className="mobile-item-name">{s.cliente}</div>
                     </div>
-                    <button 
-                      onClick={() => setDeletingId(s.id)}
-                      className="secondary icon-only"
-                      style={{ minHeight: '36px', minWidth: '36px', color: 'var(--danger)' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <button 
+                        onClick={() => handleToggleStar(s.id, s.resaltado)}
+                        className="secondary icon-only"
+                        style={{ minHeight: '36px', minWidth: '36px', color: s.resaltado ? '#f59e0b' : 'var(--secondary)' }}
+                      >
+                        <Star size={18} fill={s.resaltado ? "#f59e0b" : "none"} />
+                      </button>
+                      <button 
+                        onClick={() => setEditingServicio(s)}
+                        className="secondary icon-only"
+                        style={{ minHeight: '36px', minWidth: '36px' }}
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button 
+                        onClick={() => setDeletingId(s.id)}
+                        className="secondary icon-only"
+                        style={{ minHeight: '36px', minWidth: '36px', color: 'var(--danger)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                   <div className="mobile-item-details">
                     <div className="mobile-item-amount">
@@ -142,10 +181,11 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
         <table>
           <thead>
             <tr>
+              <th style={{ width: '40px' }}></th>
               <th>Cliente</th>
               <th className="text-right">Monto</th>
               <th className="text-right">Comisión</th>
-              <th style={{ width: '50px' }}></th>
+              <th style={{ width: '120px' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -161,7 +201,7 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
               return (
                 <React.Fragment key={`group-desktop-${grupo.fecha}`}>
                   <tr className="table-group-header">
-                    <td colSpan={2}>
+                    <td colSpan={3}>
                       <span style={{ textTransform: 'capitalize' }}>{fechaFormateada}</span>
                     </td>
                     <td colSpan={2} className="text-right">
@@ -182,21 +222,39 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                     </td>
                   </tr>
                   {grupo.servicios.map((s) => (
-                    <tr key={`desktop-${s.id}`}>
-                      <td>{s.cliente}</td>
+                    <tr key={`desktop-${s.id}`} style={{ backgroundColor: s.resaltado ? '#fffbeb' : 'transparent' }}>
+                      <td className="text-center">
+                        <button 
+                          onClick={() => handleToggleStar(s.id, s.resaltado)}
+                          style={{ background: 'none', border: 'none', color: s.resaltado ? '#f59e0b' : '#cbd5e1', cursor: 'pointer', padding: 0, minHeight: 'auto', width: 'auto' }}
+                        >
+                          <Star size={18} fill={s.resaltado ? "#f59e0b" : "none"} />
+                        </button>
+                      </td>
+                      <td style={{ fontWeight: s.resaltado ? '700' : 'normal' }}>{s.cliente}</td>
                       <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
                       <td className="text-right font-bold text-primary">
                         ${Number(s.comision).toLocaleString('es-AR')}
                       </td>
                       <td className="text-right">
-                        <button 
-                          onClick={() => setDeletingId(s.id)}
-                          className="secondary icon-only"
-                          style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
-                          title="Eliminar"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          <button 
+                            onClick={() => setEditingServicio(s)}
+                            className="secondary icon-only"
+                            style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
+                            title="Editar"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingId(s.id)}
+                            className="secondary icon-only"
+                            style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
+                            title="Eliminar"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -207,79 +265,82 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
         </table>
       </div>
 
-      {/* Modal de Confirmación */}
+      {/* Modal de Edición */}
+      {editingServicio && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1rem'
+        }}>
+          <div className="card" style={{ maxWidth: '450px', width: '100%', animation: 'slideUp 0.3s ease-out' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ color: 'var(--primary)' }}>Editar Servicio</h3>
+                <button onClick={() => setEditingServicio(null)} style={{ background: 'none', color: 'var(--secondary)', width: 'auto', minHeight: 'auto' }}>
+                  <X size={24} />
+                </button>
+             </div>
+             
+             <form onSubmit={handleUpdate}>
+                <div className="form-group">
+                  <label htmlFor="edit-fecha">Fecha</label>
+                  <input 
+                    type="date" id="edit-fecha" name="fecha" 
+                    defaultValue={typeof editingServicio.fecha === 'string' ? editingServicio.fecha.split('T')[0] : new Date(editingServicio.fecha).toISOString().split('T')[0]} 
+                    required 
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="edit-cliente">Nombre del Cliente</label>
+                  <input type="text" id="edit-cliente" name="cliente" defaultValue={editingServicio.cliente} required />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="edit-monto">Precio del Servicio ($)</label>
+                  <input type="number" id="edit-monto" name="monto" step="0.01" defaultValue={Number(editingServicio.monto)} required />
+                </div>
+                
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                  <button type="button" onClick={() => setEditingServicio(null)} className="secondary" style={{ flex: 1 }}>
+                    Cancelar
+                  </button>
+                  <button type="submit" disabled={isPendingEdit} style={{ flex: 1 }}>
+                    {isPendingEdit ? 'Guardando...' : <><Save size={18} /> Guardar</>}
+                  </button>
+                </div>
+             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Borrado */}
       {deletingId && (
         <div style={{
           position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(15, 23, 42, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(8px)',
-          padding: '1.5rem'
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, backdropFilter: 'blur(8px)', padding: '1.5rem'
         }}>
-          <div className="card" style={{ 
-            maxWidth: '400px', 
-            width: '100%', 
-            textAlign: 'center', 
-            animation: 'slideUp 0.3s ease-out',
-            position: 'relative',
-            padding: '2rem'
-          }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center', animation: 'slideUp 0.3s ease-out', position: 'relative', padding: '2rem' }}>
             <button 
               onClick={() => setDeletingId(null)}
-              style={{
-                position: 'absolute',
-                top: '1rem',
-                right: '1rem',
-                background: 'transparent',
-                color: 'var(--secondary)',
-                padding: '0.25rem',
-                border: 'none',
-                minHeight: 'auto',
-                width: 'auto'
-              }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', color: 'var(--secondary)', padding: '0.25rem', border: 'none', minHeight: 'auto', width: 'auto' }}
             >
               <X size={24} />
             </button>
-            
-            <div style={{ 
-              backgroundColor: '#fee2e2', 
-              color: 'var(--danger)', 
-              width: '56px', 
-              height: '56px', 
-              borderRadius: '50%', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              margin: '0 auto 1.25rem' 
-            }}>
+            <div style={{ backgroundColor: '#fee2e2', color: 'var(--danger)', width: '56px', height: '56px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
               <AlertCircle size={32} />
             </div>
-            
             <h3 style={{ marginBottom: '0.75rem', color: 'var(--primary)', fontSize: '1.25rem' }}>¿Eliminar servicio?</h3>
             <p style={{ color: 'var(--secondary)', fontSize: '0.95rem', marginBottom: '2rem', lineHeight: '1.5' }}>
-              Esta acción no se puede deshacer. El registro se borrará permanentemente de tu historial.
+              Esta acción no se puede deshacer. El registro se borrará permanentemente.
             </p>
-            
             <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
-              <button 
-                onClick={confirmDelete} 
-                style={{ backgroundColor: 'var(--danger)' }}
-                disabled={isPending}
-              >
+              <button onClick={confirmDelete} style={{ backgroundColor: 'var(--danger)' }} disabled={isPending}>
                 {isPending ? 'Eliminando...' : 'Sí, eliminar servicio'}
               </button>
-              <button 
-                onClick={() => setDeletingId(null)} 
-                className="secondary" 
-                disabled={isPending}
-              >
+              <button onClick={() => setDeletingId(null)} className="secondary" disabled={isPending}>
                 Cancelar
               </button>
             </div>

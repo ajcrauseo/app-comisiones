@@ -24,6 +24,7 @@ export type Servicio = {
   monto: number;
   comision: number;
   porcentaje_comision: number;
+  resaltado: boolean;
   created_at?: string;
 };
 
@@ -54,6 +55,7 @@ export async function createTables() {
       monto NUMERIC(12, 2) NOT NULL,
       comision NUMERIC(12, 2) NOT NULL,
       porcentaje_comision NUMERIC(5, 2) NOT NULL,
+      resaltado BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;

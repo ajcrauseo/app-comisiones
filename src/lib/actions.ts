@@ -125,6 +125,53 @@ export async function deleteServicio(id: number) {
   }
 }
 
+export async function toggleResaltado(id: number, currentStatus: boolean) {
+  if (!(await isAuthenticated())) {
+    return { error: 'No autorizado' };
+  }
+
+  try {
+    await sql`UPDATE servicios SET resaltado = ${!currentStatus} WHERE id = ${id}`;
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Error toggling highlight:', error);
+    return { error: 'Error al actualizar resaltado' };
+  }
+}
+
+export async function updateServicio(id: number, formData: FormData) {
+  if (!(await isAuthenticated())) {
+    return { error: 'No autorizado' };
+  }
+
+  const fecha = formData.get('fecha') as string;
+  const cliente = formData.get('cliente') as string;
+  const monto = parseFloat(formData.get('monto') as string);
+  
+  if (!fecha || !cliente || isNaN(monto)) {
+    return { error: 'Todos los campos son obligatorios' };
+  }
+
+  try {
+    // Obtener el porcentaje de comisión original para este servicio
+    const { rows } = await sql<Servicio>`SELECT porcentaje_comision FROM servicios WHERE id = ${id}`;
+    const porcentaje = rows[0]?.porcentaje_comision || 41.0;
+    const comision = (monto * porcentaje) / 100;
+
+    await sql`
+      UPDATE servicios 
+      SET fecha = ${fecha}, cliente = ${cliente}, monto = ${monto}, comision = ${comision}
+      WHERE id = ${id}
+    `;
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating service:', error);
+    return { error: 'Error al actualizar el servicio' };
+  }
+}
+
 export async function updateConfiguracion(porcentaje: number) {
   if (!(await isAuthenticated())) {
     return { error: 'No autorizado' };
