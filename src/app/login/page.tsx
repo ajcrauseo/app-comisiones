@@ -4,6 +4,7 @@ import { useActionState, useEffect } from 'react';
 import { login } from '@/lib/actions';
 import { useRouter } from 'next/navigation';
 import { Lock } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(login, null);
@@ -27,17 +28,18 @@ export default function LoginPage() {
     }}>
       <div className="card" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem 1.5rem' }}>
         <div style={{ 
-          backgroundColor: 'rgba(30, 41, 59, 0.05)', 
-          width: '56px', 
-          height: '56px', 
-          borderRadius: '1rem', 
           display: 'flex', 
-          alignItems: 'center', 
           justifyContent: 'center', 
-          margin: '0 auto 1.5rem',
-          color: 'var(--primary)'
+          marginBottom: '1.5rem' 
         }}>
-          <Lock size={28} />
+          <Image 
+            src="/logo-celeste.png" 
+            alt="Logo Celeste" 
+            width={80} 
+            height={80} 
+            className="logo-large"
+            priority
+          />
         </div>
         
         <h1 style={{ textAlign: 'center', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: 800 }}>Comisiones de Celes</h1>
