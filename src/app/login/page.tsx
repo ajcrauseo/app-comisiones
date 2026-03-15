@@ -39,6 +39,7 @@ export default function LoginPage() {
             height={80} 
             className="logo-large"
             priority
+            unoptimized
           />
         </div>
         

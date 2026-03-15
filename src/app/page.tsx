@@ -32,6 +32,7 @@ export default async function Home({
               width={40} 
               height={40} 
               className="logo"
+              unoptimized
             />
             <h1>Comisiones de Celes</h1>
           </div>
