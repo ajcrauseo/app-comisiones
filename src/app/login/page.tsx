@@ -30,7 +30,12 @@ export default function LoginPage() {
         <div style={{ 
           display: 'flex', 
           justifyContent: 'center', 
-          marginBottom: '1.5rem' 
+          marginBottom: '1.5rem',
+          borderRadius: '50%',
+          overflow: 'hidden',
+          width: '80px',
+          height: '80px',
+          margin: '0 auto 1.5rem'
         }}>
           <Image 
             src="/logo-celeste.png" 

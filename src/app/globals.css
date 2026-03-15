@@ -89,6 +89,7 @@ header .actions form {
   width: 40px;
   object-fit: cover;
   border-radius: 50%;
+  display: block;
 }
 
 .logo-large {
@@ -96,6 +97,8 @@ header .actions form {
   width: 80px;
   object-fit: cover;
   border-radius: 50%;
+  display: block;
+  aspect-ratio: 1 / 1;
 }
 
 .header-logo-container {
