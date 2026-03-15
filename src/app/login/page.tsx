@@ -32,14 +32,12 @@ export default function LoginPage() {
           justifyContent: 'center', 
           marginBottom: '1.5rem' 
         }}>
-          <Image 
+          <img 
             src="/logo-celeste.png" 
             alt="Logo Celeste" 
-            width={80} 
-            height={80} 
+            width="80" 
+            height="80" 
             className="logo-large"
-            priority
-            unoptimized
           />
         </div>
         
