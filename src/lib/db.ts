@@ -59,4 +59,11 @@ export async function createTables() {
       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;
+
+  // Asegurar que la columna existe en caso de que la tabla ya estuviera creada
+  try {
+    await sql`ALTER TABLE servicios ADD COLUMN IF NOT EXISTS resaltado BOOLEAN DEFAULT FALSE`;
+  } catch (e) {
+    console.error('Error adding column:', e);
+  }
 }

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Servicio } from '@/lib/db';
 import { deleteServicio, toggleResaltado, updateServicio } from '@/lib/actions';
-import { Trash2, AlertCircle, X, Edit, Save } from 'lucide-react';
+import { Trash2, AlertCircle, X, Edit, Save, Hash } from 'lucide-react';
+import React from 'react';
 
 export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
   const totalFacturado = servicios.reduce((acc, s) => acc + Number(s.monto), 0);
@@ -37,6 +39,8 @@ interface GrupoDia {
 }
 
 export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
+  const router = useRouter();
+  const [isPendingToggle, startTransition] = useTransition();
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [editingServicio, setEditingServicio] = useState<Servicio | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -50,8 +54,11 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     setDeletingId(null);
   };
 
-  const handleToggleStar = async (id: number, current: boolean) => {
-    await toggleResaltado(id, current);
+  const handleToggleStar = (id: number, current: boolean) => {
+    startTransition(async () => {
+      await toggleResaltado(id, current);
+      router.refresh();
+    });
   };
 
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -63,6 +70,7 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     await updateServicio(editingServicio.id, formData);
     setIsPendingEdit(false);
     setEditingServicio(null);
+    router.refresh();
   };
 
   if (servicios.length === 0) {
@@ -111,7 +119,7 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                 <div className="day-title">
                   {dayName}, {dayNumber}
                 </div>
-                <div className="day-totals">
+                <div className="day-totals" style={{ gap: '0.75rem' }}>
                   <div className="day-total-item">
                     <span className="day-total-label">Fact.</span>
                     <span className="day-total-value">${grupo.totalMonto.toLocaleString('es-AR')}</span>
@@ -119,6 +127,10 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                   <div className="day-total-item">
                     <span className="day-total-label text-success">Com.</span>
                     <span className="day-total-value text-success">${grupo.totalComision.toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="day-total-item">
+                    <span className="day-total-label">Cant.</span>
+                    <span className="day-total-value">{grupo.servicios.length}</span>
                   </div>
                 </div>
               </div>
@@ -130,18 +142,20 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                   style={{ 
                     marginBottom: '0.5rem',
                     borderLeft: s.resaltado ? '4px solid var(--danger)' : '1px solid var(--border)',
-                    backgroundColor: s.resaltado ? '#fef2f2' : 'white'
+                    backgroundColor: s.resaltado ? '#fef2f2' : 'white',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   <div className="mobile-item-header">
                     <div style={{ flex: 1 }}>
-                      <div className="mobile-item-name" style={{ color: s.resaltado ? 'var(--danger)' : 'inherit' }}>{s.cliente}</div>
+                      <div className="mobile-item-name" style={{ color: s.resaltado ? 'var(--danger)' : 'inherit', fontWeight: s.resaltado ? '700' : '600' }}>{s.cliente}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <button 
-                        onClick={() => handleToggleStar(s.id, s.resaltado)}
+                        onClick={() => handleToggleStar(s.id, !!s.resaltado)}
                         className="secondary icon-only"
-                        style={{ minHeight: '36px', minWidth: '36px', color: s.resaltado ? 'var(--danger)' : 'var(--secondary)' }}
+                        disabled={isPendingToggle}
+                        style={{ minHeight: '36px', minWidth: '36px', color: s.resaltado ? 'var(--danger)' : 'var(--secondary)', opacity: isPendingToggle ? 0.7 : 1 }}
                       >
                         <AlertCircle size={18} />
                       </button>
@@ -165,7 +179,7 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                     <div className="mobile-item-amount">
                       Total: ${Number(s.monto).toLocaleString('es-AR')}
                     </div>
-                    <div className="mobile-item-commission">
+                    <div className="mobile-item-commission" style={{ color: s.resaltado ? 'var(--danger)' : 'var(--primary)' }}>
                       ${Number(s.comision).toLocaleString('es-AR')}
                     </div>
                   </div>
@@ -201,32 +215,33 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
               return (
                 <React.Fragment key={`group-desktop-${grupo.fecha}`}>
                   <tr className="table-group-header">
-                    <td colSpan={3}>
-                      <span style={{ textTransform: 'capitalize' }}>{fechaFormateada}</span>
+                    <td colSpan={2} style={{ paddingLeft: '1rem' }}>
+                      <span style={{ textTransform: 'capitalize', fontWeight: 800, color: 'var(--primary)' }}>{fechaFormateada}</span>
                     </td>
-                    <td colSpan={2} className="text-right">
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1.5rem', fontSize: '0.85rem' }}>
-                        <span>
-                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Total Dia:</span>
+                    <td colSpan={3} className="text-right" style={{ paddingRight: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', fontSize: '0.8rem' }}>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.6rem', marginRight: '0.3rem' }}>Tot:</span>
                           <strong>${grupo.totalMonto.toLocaleString('es-AR')}</strong>
                         </span>
-                        <span>
-                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Comisión:</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.6rem', marginRight: '0.3rem' }}>Com:</span>
                           <strong className="text-success">${grupo.totalComision.toLocaleString('es-AR')}</strong>
                         </span>
-                        <span>
-                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.7rem', marginRight: '0.5rem' }}>Cant:</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{ color: 'var(--secondary)', textTransform: 'uppercase', fontSize: '0.6rem', marginRight: '0.3rem' }}>Serv:</span>
                           <strong>{grupo.servicios.length}</strong>
                         </span>
                       </div>
                     </td>
                   </tr>
                   {grupo.servicios.map((s) => (
-                    <tr key={`desktop-${s.id}`} style={{ backgroundColor: s.resaltado ? '#fef2f2' : 'transparent' }}>
+                    <tr key={`desktop-${s.id}`} style={{ backgroundColor: s.resaltado ? '#fef2f2' : 'transparent', transition: 'background-color 0.2s ease' }}>
                       <td className="text-center">
                         <button 
-                          onClick={() => handleToggleStar(s.id, s.resaltado)}
-                          style={{ background: 'none', border: 'none', color: s.resaltado ? 'var(--danger)' : '#cbd5e1', cursor: 'pointer', padding: 0, minHeight: 'auto', width: 'auto' }}
+                          onClick={() => handleToggleStar(s.id, !!s.resaltado)}
+                          disabled={isPendingToggle}
+                          style={{ background: 'none', border: 'none', color: s.resaltado ? 'var(--danger)' : '#cbd5e1', cursor: 'pointer', padding: 0, minHeight: 'auto', width: 'auto', opacity: isPendingToggle ? 0.7 : 1 }}
                         >
                           <AlertCircle size={18} />
                         </button>

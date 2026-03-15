@@ -131,12 +131,13 @@ export async function toggleResaltado(id: number, currentStatus: boolean) {
   }
 
   try {
+    console.log(`Toggling resaltado for service ${id} from ${currentStatus} to ${!currentStatus}`);
     await sql`UPDATE servicios SET resaltado = ${!currentStatus} WHERE id = ${id}`;
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    console.error('Error toggling highlight:', error);
-    return { error: 'Error al actualizar resaltado' };
+    console.error('Error toggling highlight in DB:', error);
+    return { error: 'Error al actualizar resaltado en DB' };
   }
 }
 
