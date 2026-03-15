@@ -86,14 +86,16 @@ header .actions form {
 
 .logo {
   height: 40px;
-  width: auto;
-  object-fit: contain;
+  width: 40px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .logo-large {
-  height: 64px;
-  width: auto;
-  object-fit: contain;
+  height: 80px;
+  width: 80px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .header-logo-container {
