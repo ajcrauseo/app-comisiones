@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Servicio } from '@/lib/db';
 import { deleteServicio, toggleResaltado, updateServicio } from '@/lib/actions';
-import { Trash2, AlertCircle, X, Star, Edit, Save } from 'lucide-react';
+import { Trash2, AlertCircle, X, Edit, Save } from 'lucide-react';
 
 export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
   const totalFacturado = servicios.reduce((acc, s) => acc + Number(s.monto), 0);
@@ -129,21 +129,21 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                   className="mobile-item-card" 
                   style={{ 
                     marginBottom: '0.5rem',
-                    borderLeft: s.resaltado ? '4px solid #f59e0b' : '1px solid var(--border)',
-                    backgroundColor: s.resaltado ? '#fffbeb' : 'white'
+                    borderLeft: s.resaltado ? '4px solid var(--danger)' : '1px solid var(--border)',
+                    backgroundColor: s.resaltado ? '#fef2f2' : 'white'
                   }}
                 >
                   <div className="mobile-item-header">
                     <div style={{ flex: 1 }}>
-                      <div className="mobile-item-name">{s.cliente}</div>
+                      <div className="mobile-item-name" style={{ color: s.resaltado ? 'var(--danger)' : 'inherit' }}>{s.cliente}</div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <button 
                         onClick={() => handleToggleStar(s.id, s.resaltado)}
                         className="secondary icon-only"
-                        style={{ minHeight: '36px', minWidth: '36px', color: s.resaltado ? '#f59e0b' : 'var(--secondary)' }}
+                        style={{ minHeight: '36px', minWidth: '36px', color: s.resaltado ? 'var(--danger)' : 'var(--secondary)' }}
                       >
-                        <Star size={18} fill={s.resaltado ? "#f59e0b" : "none"} />
+                        <AlertCircle size={18} />
                       </button>
                       <button 
                         onClick={() => setEditingServicio(s)}
@@ -222,16 +222,16 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                     </td>
                   </tr>
                   {grupo.servicios.map((s) => (
-                    <tr key={`desktop-${s.id}`} style={{ backgroundColor: s.resaltado ? '#fffbeb' : 'transparent' }}>
+                    <tr key={`desktop-${s.id}`} style={{ backgroundColor: s.resaltado ? '#fef2f2' : 'transparent' }}>
                       <td className="text-center">
                         <button 
                           onClick={() => handleToggleStar(s.id, s.resaltado)}
-                          style={{ background: 'none', border: 'none', color: s.resaltado ? '#f59e0b' : '#cbd5e1', cursor: 'pointer', padding: 0, minHeight: 'auto', width: 'auto' }}
+                          style={{ background: 'none', border: 'none', color: s.resaltado ? 'var(--danger)' : '#cbd5e1', cursor: 'pointer', padding: 0, minHeight: 'auto', width: 'auto' }}
                         >
-                          <Star size={18} fill={s.resaltado ? "#f59e0b" : "none"} />
+                          <AlertCircle size={18} />
                         </button>
                       </td>
-                      <td style={{ fontWeight: s.resaltado ? '700' : 'normal' }}>{s.cliente}</td>
+                      <td style={{ fontWeight: s.resaltado ? '700' : 'normal', color: s.resaltado ? 'var(--danger)' : 'inherit' }}>{s.cliente}</td>
                       <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
                       <td className="text-right font-bold text-primary">
                         ${Number(s.comision).toLocaleString('es-AR')}
