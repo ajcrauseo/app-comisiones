@@ -15,13 +15,13 @@ export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
         <div className="stat-label">Total Facturado</div>
         <div className="stat-value">${totalFacturado.toLocaleString('es-AR')}</div>
       </div>
-      <div className="card stat-card">
-        <div className="stat-label">Total Comisiones</div>
-        <div className="stat-value" style={{ color: 'var(--success)' }}>
+      <div className="card stat-card" style={{ borderLeftColor: 'var(--success)' }}>
+        <div className="stat-label">Comisiones</div>
+        <div className="stat-value text-success">
           ${totalComisiones.toLocaleString('es-AR')}
         </div>
       </div>
-      <div className="card stat-card">
+      <div className="card stat-card" style={{ borderLeftColor: 'var(--secondary)' }}>
         <div className="stat-label">Servicios</div>
         <div className="stat-value">{servicios.length}</div>
       </div>
@@ -51,56 +51,90 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
 
   return (
     <>
-      <div className="card">
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th className="text-right">Monto</th>
-                <th className="text-right">Comisión</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {servicios.map((s) => {
-                // Ensure date stays on the same day by adding noon (T12:00:00) 
-                // when parsing the date string from Postgres
-                const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
-                const fechaFormateada = dateObj.toLocaleDateString('es-AR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                });
+      {/* Mobile Cards View */}
+      <div className="mobile-cards">
+        {servicios.map((s) => {
+          const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+          const fechaFormateada = dateObj.toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit'
+          });
 
-                return (
-                  <tr key={s.id}>
-                    <td>{fechaFormateada}</td>
-                    <td>{s.cliente}</td>
-                    <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
-                    <td className="text-right font-bold text-primary">
-                      ${Number(s.comision).toLocaleString('es-AR')}
-                    </td>
-                    <td className="text-right">
-                      <button 
-                        onClick={() => setDeletingId(s.id)}
-                        className="secondary"
-                        style={{ padding: '0.25rem', borderRadius: '0.25rem', display: 'flex' }}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+          return (
+            <div key={`mobile-${s.id}`} className="mobile-item-card">
+              <div className="mobile-item-header">
+                <div>
+                  <span className="mobile-item-date">{fechaFormateada}</span>
+                  <div className="mobile-item-name">{s.cliente}</div>
+                </div>
+                <button 
+                  onClick={() => setDeletingId(s.id)}
+                  className="secondary icon-only"
+                  style={{ minHeight: '40px', minWidth: '40px', color: 'var(--danger)' }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+              <div className="mobile-item-details">
+                <div className="mobile-item-amount">
+                  Total: ${Number(s.monto).toLocaleString('es-AR')}
+                </div>
+                <div className="mobile-item-commission">
+                  ${Number(s.comision).toLocaleString('es-AR')}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Modal de Confirmación Elegante */}
+      {/* Desktop Table View */}
+      <div className="card table-desktop" style={{ padding: 0, overflow: 'hidden' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th className="text-right">Monto</th>
+              <th className="text-right">Comisión</th>
+              <th style={{ width: '50px' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {servicios.map((s) => {
+              const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+              const fechaFormateada = dateObj.toLocaleDateString('es-AR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              });
+
+              return (
+                <tr key={`desktop-${s.id}`}>
+                  <td>{fechaFormateada}</td>
+                  <td>{s.cliente}</td>
+                  <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
+                  <td className="text-right font-bold text-primary">
+                    ${Number(s.comision).toLocaleString('es-AR')}
+                  </td>
+                  <td className="text-right">
+                    <button 
+                      onClick={() => setDeletingId(s.id)}
+                      className="secondary icon-only"
+                      style={{ padding: '0.4rem', minHeight: 'auto', minWidth: 'auto' }}
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal de Confirmación */}
       {deletingId && (
         <div style={{
           position: 'fixed',
@@ -108,19 +142,19 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
-          backdropFilter: 'blur(4px)',
-          padding: '1rem'
+          backdropFilter: 'blur(8px)',
+          padding: '1.5rem'
         }}>
           <div className="card" style={{ 
             maxWidth: '400px', 
             width: '100%', 
             textAlign: 'center', 
-            animation: 'fadeIn 0.2s ease-out',
+            animation: 'slideUp 0.3s ease-out',
             position: 'relative',
             padding: '2rem'
           }}>
@@ -133,46 +167,47 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                 background: 'transparent',
                 color: 'var(--secondary)',
                 padding: '0.25rem',
-                border: 'none'
+                border: 'none',
+                minHeight: 'auto',
+                width: 'auto'
               }}
             >
-              <X size={20} />
+              <X size={24} />
             </button>
             
             <div style={{ 
               backgroundColor: '#fee2e2', 
-              color: '#dc2626', 
-              width: '48px', 
-              height: '48px', 
+              color: 'var(--danger)', 
+              width: '56px', 
+              height: '56px', 
               borderRadius: '50%', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
-              margin: '0 auto 1rem' 
+              margin: '0 auto 1.25rem' 
             }}>
-              <AlertCircle size={24} />
+              <AlertCircle size={32} />
             </div>
             
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--primary)' }}>¿Eliminar servicio?</h3>
-            <p style={{ color: 'var(--secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ marginBottom: '0.75rem', color: 'var(--primary)', fontSize: '1.25rem' }}>¿Eliminar servicio?</h3>
+            <p style={{ color: 'var(--secondary)', fontSize: '0.95rem', marginBottom: '2rem', lineHeight: '1.5' }}>
               Esta acción no se puede deshacer. El registro se borrará permanentemente de tu historial.
             </p>
             
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+              <button 
+                onClick={confirmDelete} 
+                style={{ backgroundColor: 'var(--danger)' }}
+                disabled={isPending}
+              >
+                {isPending ? 'Eliminando...' : 'Sí, eliminar servicio'}
+              </button>
               <button 
                 onClick={() => setDeletingId(null)} 
                 className="secondary" 
-                style={{ flex: 1 }}
                 disabled={isPending}
               >
                 Cancelar
-              </button>
-              <button 
-                onClick={confirmDelete} 
-                style={{ flex: 1, backgroundColor: '#dc2626' }}
-                disabled={isPending}
-              >
-                {isPending ? 'Eliminando...' : 'Sí, eliminar'}
               </button>
             </div>
           </div>
@@ -180,9 +215,9 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
       )}
 
       <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>

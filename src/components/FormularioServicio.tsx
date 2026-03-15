@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { addServicio } from '@/lib/actions';
+import { PlusCircle } from 'lucide-react';
 
 export default function FormularioServicio() {
   const [state, action, isPending] = useActionState(addServicio, null);
@@ -28,7 +29,9 @@ export default function FormularioServicio() {
 
   return (
     <div className="card">
-      <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Nuevo Servicio</h2>
+      <h2 style={{ marginBottom: '1.25rem', fontSize: '1.25rem', color: 'var(--primary)' }}>
+        Nuevo Servicio
+      </h2>
       <form action={action}>
         <div className="form-group">
           <label htmlFor="fecha">Fecha</label>
@@ -62,11 +65,9 @@ export default function FormularioServicio() {
           />
         </div>
         
-        {state?.error && <p style={{ color: 'red', marginBottom: '1rem', fontSize: '0.875rem' }}>{state.error}</p>}
+        {state?.error && <p className="text-danger mb-4" style={{ fontSize: '0.875rem' }}>{state.error}</p>}
         {showSuccess && (
-          <p style={{ 
-            color: 'var(--success)', 
-            marginBottom: '1rem', 
+          <p className="text-success mb-4" style={{ 
             fontSize: '0.875rem',
             animation: 'fadeInOut 0.3s ease-in-out'
           }}>
@@ -75,7 +76,14 @@ export default function FormularioServicio() {
         )}
 
         <button type="submit" disabled={isPending} style={{ width: '100%' }}>
-          {isPending ? 'Guardando...' : 'Agregar Servicio'}
+          {isPending ? (
+            'Guardando...'
+          ) : (
+            <>
+              <PlusCircle size={20} />
+              <span>Agregar Servicio</span>
+            </>
+          )}
         </button>
       </form>
 

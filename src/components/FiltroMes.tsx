@@ -18,7 +18,16 @@ export default function FiltroMes({ currentMonth }: { currentMonth: string }) {
       name="mes" 
       defaultValue={currentMonth} 
       onChange={handleChange}
-      style={{ padding: '0.5rem', width: 'auto', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
+      className="month-input"
+      style={{ 
+        padding: '0 0.8rem', 
+        width: 'auto', 
+        borderRadius: '0.75rem', 
+        border: '1px solid var(--border)',
+        height: '48px',
+        minWidth: '140px',
+        boxSizing: 'border-box'
+      }}
     />
   );
 }

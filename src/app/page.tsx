@@ -25,16 +25,16 @@ export default async function Home({
       <header>
         <div>
           <h1>Comisiones de Celes</h1>
-          <p style={{ color: 'var(--secondary)', fontSize: '0.875rem' }}>Control de Comisiones y Servicios</p>
+          <p>Control de Comisiones y Servicios</p>
         </div>
         <div className="actions">
           <FiltroMes currentMonth={currentMonth} />
-          <Link href="/configuracion" className="button secondary" title="Configuración" style={{ padding: '0.5rem' }}>
-            <Settings size={24} />
+          <Link href="/configuracion" className="button secondary icon-only" title="Configuración">
+            <Settings size={22} />
           </Link>
           <form action={logout}>
-            <button type="submit" className="secondary" style={{ padding: '0.5rem' }} title="Cerrar Sesión">
-              <LogOut size={20} />
+            <button type="submit" className="secondary icon-only" title="Cerrar Sesión">
+              <LogOut size={22} />
             </button>
           </form>
         </div>
@@ -45,16 +45,16 @@ export default async function Home({
       <div className="grid">
         <aside>
           <FormularioServicio />
-          <div className="card" style={{ fontSize: '0.875rem', color: 'var(--secondary)' }}>
-            <p>Comisión actual: <strong>{porcentaje}%</strong></p>
-            <p style={{ marginTop: '0.5rem' }}>
+          <div className="card" style={{ fontSize: '0.875rem', color: 'var(--secondary)', borderLeft: '4px solid #cbd5e1' }}>
+            <p>Comisión actual: <strong className="text-primary">{porcentaje}%</strong></p>
+            <p className="mt-2">
               Puedes cambiar este porcentaje en el panel de configuración.
             </p>
           </div>
         </aside>
 
         <section>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+          <h2 className="mb-4" style={{ fontSize: '1.25rem', color: 'var(--primary)' }}>
             Servicios de {new Date(currentMonth + '-02').toLocaleString('es-AR', { month: 'long', year: 'numeric' })}
           </h2>
           <ListaServicios servicios={servicios} />
