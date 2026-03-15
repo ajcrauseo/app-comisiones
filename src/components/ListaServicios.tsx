@@ -372,5 +372,3 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
     </>
   );
 }
-
-import React from 'react';
