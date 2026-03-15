@@ -49,7 +49,7 @@ export default function FormularioServicio() {
             type="text" 
             id="cliente" 
             name="cliente" 
-            placeholder="Celeste Rengifo" 
+            placeholder="Ej: Celeste Rengifo" 
             required 
           />
         </div>
