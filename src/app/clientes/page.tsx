@@ -106,13 +106,16 @@ export default function ClientesPage() {
 
                     <div className="mobile-cards">
                       {serviciosCliente.map((s) => {
-                        const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+                        const fechaRaw = s.fecha instanceof Date ? s.fecha.toISOString() : s.fecha;
+                        const dateStr = fechaRaw.split('T')[0];
+                        const [year, month, day] = dateStr.split('-');
+                        const fechaFormateada = `${day}/${month}/${year}`;
                         return (
                           <div key={s.id} className="card" style={{ padding: '1rem', borderLeft: '4px solid var(--primary)', marginBottom: '0.75rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--secondary)', fontSize: '0.875rem' }}>
                                 <Calendar size={14} />
-                                {dateObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                {fechaFormateada}
                               </div>
                               <div style={{ fontWeight: 800, color: 'var(--primary)' }}>
                                 ${Number(s.monto).toLocaleString('es-AR')}
@@ -144,11 +147,14 @@ export default function ClientesPage() {
                         </thead>
                         <tbody>
                           {serviciosCliente.map((s) => {
-                            const dateObj = typeof s.fecha === 'string' ? new Date(s.fecha + 'T12:00:00') : new Date(s.fecha);
+                            const fechaRaw = s.fecha instanceof Date ? s.fecha.toISOString() : s.fecha;
+                            const dateStr = fechaRaw.split('T')[0];
+                            const [year, month, day] = dateStr.split('-');
+                            const fechaFormateada = `${day}/${month}/${year}`;
                             return (
                               <tr key={`desktop-${s.id}`}>
                                 <td>
-                                  {dateObj.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                  {fechaFormateada}
                                 </td>
                                 <td style={{ fontWeight: 600 }}>{s.nombre_servicio || 'Servicio General'}</td>
                                 <td>
