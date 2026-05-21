@@ -106,7 +106,9 @@ export default function ClientesPage() {
 
                     <div className="mobile-cards">
                       {serviciosCliente.map((s) => {
-                        const fechaRaw = s.fecha as string;
+                        const fechaRaw = s.fecha instanceof Date 
+                          ? s.fecha.toISOString() 
+                          : (typeof s.fecha === 'object' && s.fecha !== null && 'toISOString' in s.fecha ? (s.fecha as any).toISOString() : String(s.fecha));
                         const dateStr = fechaRaw.split('T')[0];
                         const [year, month, day] = dateStr.split('-');
                         const fechaFormateada = `${day}/${month}/${year}`;
@@ -147,7 +149,9 @@ export default function ClientesPage() {
                         </thead>
                         <tbody>
                           {serviciosCliente.map((s) => {
-                            const fechaRaw = s.fecha as string;
+                            const fechaRaw = s.fecha instanceof Date 
+                              ? s.fecha.toISOString() 
+                              : (typeof s.fecha === 'object' && s.fecha !== null && 'toISOString' in s.fecha ? (s.fecha as any).toISOString() : String(s.fecha));
                             const dateStr = fechaRaw.split('T')[0];
                             const [year, month, day] = dateStr.split('-');
                             const fechaFormateada = `${day}/${month}/${year}`;
