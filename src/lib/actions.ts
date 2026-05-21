@@ -13,7 +13,7 @@ async function isAuthenticated() {
   return session?.value === SESSION_SECRET;
 }
 
-export async function login(prevState: any, formData: FormData) {
+export async function login(prevState: unknown, formData: FormData) {
   const password = formData.get('password') as string;
   const correctPassword = process.env.APP_PASSWORD;
 
@@ -64,7 +64,10 @@ export async function getServicios(mes?: string): Promise<Servicio[]> {
     const { rows } = await query;
     return rows;
   } catch (error) {
-    console.error('Error getting services:', error);
+    const err = error as Error & { code?: string };
+    if (err.code !== 'ECONNREFUSED') {
+      console.error('Error getting services:', error);
+    }
     return [];
   }
 }
@@ -77,18 +80,20 @@ export async function getConfiguracion() {
   try {
     const { rows } = await sql`SELECT porcentaje_default FROM configuracion WHERE id = 1`;
     return rows[0]?.porcentaje_default || 41.0;
-  } catch (error) {
+  } catch {
     return 41.0;
   }
 }
 
-export async function addServicio(prevState: any, formData: FormData) {
+export async function addServicio(prevState: unknown, formData: FormData) {
   if (!(await isAuthenticated())) {
     return { error: 'No autorizado' };
   }
 
   const fecha = formData.get('fecha') as string;
   const cliente = formData.get('cliente') as string;
+  const nombre_servicio = formData.get('nombre_servicio') as string;
+  const duracion = formData.get('duracion') as string;
   const monto = parseFloat(formData.get('monto') as string);
   
   if (!fecha || !cliente || isNaN(monto)) {
@@ -100,8 +105,8 @@ export async function addServicio(prevState: any, formData: FormData) {
 
   try {
     await sql`
-      INSERT INTO servicios (fecha, cliente, monto, comision, porcentaje_comision)
-      VALUES (${fecha}, ${cliente}, ${monto}, ${comision}, ${porcentaje})
+      INSERT INTO servicios (fecha, cliente, nombre_servicio, duracion, monto, comision, porcentaje_comision)
+      VALUES (${fecha}, ${cliente}, ${nombre_servicio}, ${duracion}, ${monto}, ${comision}, ${porcentaje})
     `;
     revalidatePath('/');
     return { success: true };
@@ -120,7 +125,7 @@ export async function deleteServicio(id: number) {
     await sql`DELETE FROM servicios WHERE id = ${id}`;
     revalidatePath('/');
     return { success: true };
-  } catch (error) {
+  } catch {
     return { error: 'Error al eliminar' };
   }
 }
@@ -148,6 +153,8 @@ export async function updateServicio(id: number, formData: FormData) {
 
   const fecha = formData.get('fecha') as string;
   const cliente = formData.get('cliente') as string;
+  const nombre_servicio = formData.get('nombre_servicio') as string;
+  const duracion = formData.get('duracion') as string;
   const monto = parseFloat(formData.get('monto') as string);
   
   if (!fecha || !cliente || isNaN(monto)) {
@@ -162,7 +169,7 @@ export async function updateServicio(id: number, formData: FormData) {
 
     await sql`
       UPDATE servicios 
-      SET fecha = ${fecha}, cliente = ${cliente}, monto = ${monto}, comision = ${comision}
+      SET fecha = ${fecha}, cliente = ${cliente}, nombre_servicio = ${nombre_servicio}, duracion = ${duracion}, monto = ${monto}, comision = ${comision}
       WHERE id = ${id}
     `;
     revalidatePath('/');
@@ -170,6 +177,49 @@ export async function updateServicio(id: number, formData: FormData) {
   } catch (error) {
     console.error('Error updating service:', error);
     return { error: 'Error al actualizar el servicio' };
+  }
+}
+
+export async function getServiciosSemana(inicio: string, fin: string): Promise<Servicio[]> {
+  if (!(await isAuthenticated())) {
+    return [];
+  }
+
+  try {
+    const { rows } = await sql<Servicio>`
+      SELECT * FROM servicios 
+      WHERE fecha >= ${inicio} AND fecha <= ${fin}
+      ORDER BY fecha DESC, id DESC
+    `;
+    return rows;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    if (err.code !== 'ECONNREFUSED') {
+      console.error('Error getting weekly services:', error);
+    }
+    return [];
+  }
+}
+
+export async function getServiciosByCliente(nombre: string): Promise<Servicio[]> {
+  if (!(await isAuthenticated())) {
+    return [];
+  }
+
+  try {
+    const searchTerm = `%${nombre}%`;
+    const { rows } = await sql<Servicio>`
+      SELECT * FROM servicios 
+      WHERE LOWER(cliente) LIKE LOWER(${searchTerm})
+      ORDER BY fecha DESC, id DESC
+    `;
+    return rows;
+  } catch (error) {
+    const err = error as Error & { code?: string };
+    if (err.code !== 'ECONNREFUSED') {
+      console.error('Error getting services by client:', error);
+    }
+    return [];
   }
 }
 
@@ -182,7 +232,7 @@ export async function updateConfiguracion(porcentaje: number) {
     await sql`UPDATE configuracion SET porcentaje_default = ${porcentaje} WHERE id = 1`;
     revalidatePath('/');
     return { success: true };
-  } catch (error) {
+  } catch {
     return { error: 'Error al actualizar configuración' };
   }
 }

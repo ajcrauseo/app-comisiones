@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Servicio } from '@/lib/db';
 import { deleteServicio, toggleResaltado, updateServicio } from '@/lib/actions';
-import { Trash2, AlertCircle, X, Edit, Save, Hash } from 'lucide-react';
+import { Trash2, AlertCircle, X, Edit, Save, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CATALOGO_SERVICIOS } from '@/lib/constants';
 import React from 'react';
 
 export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
@@ -26,6 +28,100 @@ export function ResumenMes({ servicios }: { servicios: Servicio[] }) {
       <div className="card stat-card" style={{ borderLeftColor: 'var(--secondary)' }}>
         <div className="stat-label">Servicios</div>
         <div className="stat-value">{servicios.length}</div>
+      </div>
+    </div>
+  );
+}
+
+function parseDuracion(duracion: string): number {
+  if (!duracion) return 0;
+  
+  let totalMinutos = 0;
+  
+  // Buscar horas (ej: "1 h", "2 h", "1 h 20 min")
+  const horasMatch = duracion.match(/(\d+)\s*h/);
+  if (horasMatch) {
+    totalMinutos += parseInt(horasMatch[1]) * 60;
+  }
+  
+  // Buscar minutos (ej: "20 min", "40 min", "1 h 20 min")
+  const minutosMatch = duracion.match(/(\d+)\s*min/);
+  if (minutosMatch) {
+    totalMinutos += parseInt(minutosMatch[1]);
+  }
+  
+  return totalMinutos;
+}
+
+export function ResumenSemanal({ servicios, inicio, fin }: { servicios: Servicio[], inicio: string, fin: string }) {
+  const totalMinutos = servicios.reduce((acc, s) => acc + parseDuracion(s.duracion || ''), 0);
+  const horas = Math.floor(totalMinutos / 60);
+  const minutos = totalMinutos % 60;
+  
+  const dateInicio = new Date(inicio + 'T12:00:00');
+  const dateFin = new Date(fin + 'T12:00:00');
+  
+  const formattedInicio = dateInicio.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+  const formattedFin = dateFin.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  // Calcular fechas para navegación
+  const prevLunes = new Date(dateInicio);
+  prevLunes.setDate(dateInicio.getDate() - 7);
+  const nextLunes = new Date(dateInicio);
+  nextLunes.setDate(dateInicio.getDate() + 7);
+
+  const prevSemanaStr = prevLunes.toISOString().split('T')[0];
+  const nextSemanaStr = nextLunes.toISOString().split('T')[0];
+
+  return (
+    <div className="card weekly-summary-card">
+      <div className="weekly-summary-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <Link 
+              href={`/?semana=${prevSemanaStr}`} 
+              className="button secondary icon-only" 
+              style={{ width: '32px', height: '32px', minHeight: 'auto', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }}
+              title="Semana anterior"
+            >
+              <ChevronLeft size={18} />
+            </Link>
+            <Link 
+              href={`/?semana=${nextSemanaStr}`} 
+              className="button secondary icon-only" 
+              style={{ width: '32px', height: '32px', minHeight: 'auto', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white' }}
+              title="Semana siguiente"
+            >
+              <ChevronRight size={18} />
+            </Link>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.9, fontSize: '0.9rem' }}>
+            <Calendar size={18} />
+            <span style={{ fontWeight: 600 }}>Semana del {formattedInicio} al {formattedFin}</span>
+          </div>
+        </div>
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: '0.35rem 0.85rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Resumen Semanal
+        </div>
+      </div>
+      
+      <div className="weekly-summary-grid">
+        <div className="weekly-stat-item" style={{ borderLeftColor: '#fcd34d' }}>
+          <div className="weekly-stat-label">Tiempo Total</div>
+          <div className="weekly-stat-value">
+            {horas}h {minutos > 0 ? `${minutos}m` : ''}
+          </div>
+        </div>
+        <div className="weekly-stat-item" style={{ borderLeftColor: '#34d399' }}>
+          <div className="weekly-stat-label">Comisión</div>
+          <div className="weekly-stat-value" style={{ color: '#34d399' }}>
+            ${servicios.reduce((acc, s) => acc + Number(s.comision), 0).toLocaleString('es-AR')}
+          </div>
+        </div>
+        <div className="weekly-stat-item" style={{ borderLeftColor: '#60a5fa' }}>
+          <div className="weekly-stat-label">Servicios</div>
+          <div className="weekly-stat-value">{servicios.length}</div>
+        </div>
       </div>
     </div>
   );
@@ -148,7 +244,14 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                 >
                   <div className="mobile-item-header">
                     <div style={{ flex: 1 }}>
-                      <div className="mobile-item-name" style={{ color: s.resaltado ? 'var(--danger)' : 'inherit', fontWeight: s.resaltado ? '700' : '600' }}>{s.cliente}</div>
+                      <div className="mobile-item-name" style={{ color: s.resaltado ? 'var(--danger)' : 'inherit', fontWeight: s.resaltado ? '700' : '600' }}>
+                        {s.cliente}
+                        {s.nombre_servicio && (
+                          <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 500, color: 'var(--secondary)', marginTop: '0.1rem' }}>
+                            {s.nombre_servicio} {s.duracion && `(${s.duracion})`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                       <button 
@@ -246,7 +349,15 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                           <AlertCircle size={18} />
                         </button>
                       </td>
-                      <td style={{ fontWeight: s.resaltado ? '700' : 'normal', color: s.resaltado ? 'var(--danger)' : 'inherit' }}>{s.cliente}</td>
+                      <td style={{ fontWeight: s.resaltado ? '700' : 'normal', color: s.resaltado ? 'var(--danger)' : 'inherit' }}>
+                        <div style={{ fontWeight: 700 }}>{s.cliente}</div>
+                        {s.nombre_servicio && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            {s.nombre_servicio} 
+                            {s.duracion && <span style={{ display: 'flex', alignItems: 'center', gap: '0.1rem' }}><Clock size={10} /> {s.duracion}</span>}
+                          </div>
+                        )}
+                      </td>
                       <td className="text-right">${Number(s.monto).toLocaleString('es-AR')}</td>
                       <td className="text-right font-bold text-primary">
                         ${Number(s.comision).toLocaleString('es-AR')}
@@ -310,6 +421,41 @@ export function ListaServicios({ servicios }: { servicios: Servicio[] }) {
                   <label htmlFor="edit-cliente">Nombre del Cliente</label>
                   <input type="text" id="edit-cliente" name="cliente" defaultValue={editingServicio.cliente} required />
                 </div>
+                <div className="form-group">
+                  <label htmlFor="edit-nombre_servicio">Servicio Realizado</label>
+                  <select 
+                    id="edit-nombre_servicio" 
+                    name="nombre_servicio" 
+                    defaultValue={editingServicio.nombre_servicio || ''}
+                    required
+                    style={{ width: '100%' }}
+                    onChange={(e) => {
+                      const nombre = e.target.value;
+                      let dur = '';
+                      for (const cat of CATALOGO_SERVICIOS) {
+                        const s = cat.servicios.find(serv => serv.nombre === nombre);
+                        if (s) {
+                          dur = s.duracion;
+                          break;
+                        }
+                      }
+                      const durInput = document.getElementById('edit-duracion') as HTMLInputElement;
+                      if (durInput) durInput.value = dur;
+                    }}
+                  >
+                    <option value="">Selecciona un servicio</option>
+                    {CATALOGO_SERVICIOS.map((cat) => (
+                      <optgroup key={cat.categoria} label={cat.categoria}>
+                        {cat.servicios.map((s) => (
+                          <option key={s.nombre} value={s.nombre}>
+                            {s.nombre}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <input type="hidden" id="edit-duracion" name="duracion" defaultValue={editingServicio.duracion || ''} />
                 <div className="form-group">
                   <label htmlFor="edit-monto">Precio del Servicio ($)</label>
                   <input type="number" id="edit-monto" name="monto" step="0.01" defaultValue={Number(editingServicio.monto)} required />

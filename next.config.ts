@@ -35,7 +35,6 @@ const nextConfig: NextConfig = {
         pathname: '/dchchsyil/**',
       },
     ],
-    domains: ['res.cloudinary.com'],
   },
 };
 
